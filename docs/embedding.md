@@ -9,7 +9,7 @@
   "start": "H-X#0\nI-X#1",
   "startQasm": "...", 
   "palette": ["h","x","cx"],
-  "results": ["chances","shots","inspect"],
+  "results": ["chances","shots","inspect","bloch"],
   "code": ["python","qasm","text","ascii"], "codeOpen": false,
   "console": true, "chips": ["h 0","cx 0 1","run"], "python": true,
   "complete": "all | run | shots", "seed": 1, "shots": 1024,
@@ -34,8 +34,11 @@
 ```json
 { "probs": [ {"state": "11", "min": 0.99}, {"state": "0", "approx": 0.5, "tol": 0.02}, {"state": "1", "max": 0.1} ],
   "gates": { "min": 2, "max": 6, "only": ["h","z"], "require": ["cx"], "forbid": ["x"], "count": {"h": {"min": 2}} },
-  "linked": true, "via": "python" }
+  "linked": true, "via": "python",
+  "bloch": [ {"q": 0, "x": 1, "y": 0, "z": 0, "tol": 0.08} ] }
 ```
+
+`bloch` checks where the Bloch arrow of a qubit points (x, y, z each between -1 and 1; omitted axes mean 0).
 
 * `state` is a prefix of the result written with qubit 0 on the left, so `"1"` means "qubit 0 is 1" (a marginal) and `"110"` is a full state.
 * `linked` is true when a multi-qubit gate (CNOT, CZ, SWAP, CCX) is required, false when none is allowed.

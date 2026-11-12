@@ -4,6 +4,7 @@ A phone-friendly quantum circuit lab that runs entirely in the browser, offline,
 Built for courses: configure it with a small JSON file (levels, gates, start circuits) and drop it into any page or webxdc app.
 
 * **Composer** in the spirit of IBM Quantum Composer: colour-coded gate palette, tap-to-place circuit grid, a probability dial on every wire, chances, shots with a seed, and an *Inspect* view with amplitudes, phase dials and Bloch discs. Made for thumbs.
+* **Bloch sphere**: an interactive 3D sphere per qubit (drag to turn it, top and side views, spin). The arrow glides when you add a gate, and shrinks inside the ball for entangled qubits. Levels can require an arrow position with `goal.bloch`.
 * **Code, both ways.** Edit the circuit or edit the code, and the other side follows:
   * **MicroQiskit** (Python, runs on MicroPython compiled to WebAssembly) , see [docs/microqiskit.md](docs/microqiskit.md)
   * **micro QASM** (OpenQASM 3 and 2 subset) , see [docs/microqasm.md](docs/microqasm.md)

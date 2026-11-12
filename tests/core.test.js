@@ -27,4 +27,5 @@ t('measure subset', () => { const c = Q.fromText('X-I\nI-M'); const r = Q.simula
 t('check', () => { const c = Q.fromText('H-X#0\nI-X#1'); const r = Q.simulate(c); assert(Q.check({ probs: [{ state: '00', approx: .5 }, { state: '11', approx: .5 }], linked: true }, c, r).ok); assert(!Q.check({ probs: [{ state: '01', min: .9 }] }, c, r).ok); });
 t('layout asap', () => { const c = Q.fromQasm('qubit[3] q;\nh q[0];\nh q[1];\ncx q[0], q[2];\nh q[1];'); assert.equal(c.cols, 3); });
 t('bloch', () => { const b = Q.bloch(Q.simulate(Q.fromText('H')), 0); near(b.x, 1); near(b.z, 0); const e = Q.bloch(Q.simulate(Q.fromText('H-X#0\nI-X#1')), 0); near(Math.hypot(e.x, e.y, e.z), 0); });
+t('bloch goal', () => { const c = Q.fromText('H'); const r = Q.simulate(c); assert(Q.check({ bloch: [{ q: 0, x: 1, y: 0, z: 0 }] }, c, r).ok); assert(!Q.check({ bloch: [{ q: 0, x: 0, y: 0, z: 1 }] }, c, r).ok); });
 console.log(n + ' core tests ok');
