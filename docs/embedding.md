@@ -24,6 +24,7 @@
 | `results` | which result tabs to show |
 | `code` | which code tabs to show. Leave out `"python"` to hide the Python tab |
 | `python` | `false` leaves MicroPython out of the build (smaller file) |
+| `codeTab`, `resultsTab` | which code tab / result tab is shown first |
 | `complete` | when to call `lilith.complete()`: `"all"` (every level solved, default with levels), `"run"` (as soon as the circuit has a gate), `"shots"` (when the console runs shots) |
 
 ## Levels and goals
@@ -33,13 +34,14 @@
 ```json
 { "probs": [ {"state": "11", "min": 0.99}, {"state": "0", "approx": 0.5, "tol": 0.02}, {"state": "1", "max": 0.1} ],
   "gates": { "min": 2, "max": 6, "only": ["h","z"], "require": ["cx"], "forbid": ["x"], "count": {"h": {"min": 2}} },
-  "linked": true }
+  "linked": true, "via": "python" }
 ```
 
 * `state` is a prefix of the result written with qubit 0 on the left, so `"1"` means "qubit 0 is 1" (a marginal) and `"110"` is a full state.
 * `linked` is true when a multi-qubit gate (CNOT, CZ, SWAP, CCX) is required, false when none is allowed.
 * Gate names are lower case: `h x y z s t cx cz swap ...`.
-* `start` uses the Q text notation. `solution` is shown by the *Show a solution* button.
+* `via` (`"python"`, `"qasm"` or `"text"`) means the circuit must have been made by running/applying code in that tab, so a level can teach the code panel.
+* `start` uses the Q text notation. `solutionCode` (optional) is shown instead of `solution` and is pasted into the code editor for `via` levels. `solution` is shown by the *Show a solution* button.
 
 ## JavaScript API
 

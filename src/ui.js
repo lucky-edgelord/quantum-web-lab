@@ -15,7 +15,7 @@
 
   QWL.mount = function (el, cfg) {
     cfg = Object.assign({}, DEFAULTS, cfg || {});
-    var S = { c: null, res: null, tool: cfg.palette[0] || 'h', pend: null, undo: [], redo: [], angle: 'pi/2', rtab: cfg.results[0], ctab: cfg.code[0], left: true, uni: true, dirty: false, seed: cfg.seed, shots: cfg.shots, counts: null, li: 0, solved: {}, pending: false, completed: false, chart: 'chances' };
+    var S = { c: null, res: null, tool: cfg.palette[0] || 'h', pend: null, undo: [], redo: [], angle: 'pi/2', rtab: cfg.resultsTab || cfg.results[0], ctab: cfg.codeTab || cfg.code[0], left: true, uni: true, dirty: false, seed: cfg.seed, shots: cfg.shots, counts: null, li: 0, solved: {}, pending: false, completed: false, chart: 'chances', via: 'composer' };
     var $ = function (id) { return el.querySelector('#' + id); };
     el.classList.add('qwl'); el.innerHTML = '';
     var P = cfg.palette.filter(function (g) { return G[g]; });
@@ -44,7 +44,7 @@
       if (record !== false && S.c) { S.undo.push(snap()); if (S.undo.length > 80) S.undo.shift(); S.redo = []; }
       S.c = c; S.pend = null; S.dirty = false; evalAll(); render(); afterChange();
     }
-    function edit(fn, fromCon) { var c = S.c.clone(); fn(c); if (fromCon) S.pending = true; setCircuit(c, true); }
+    function edit(fn, fromCon) { var c = S.c.clone(); fn(c); S.via = fromCon ? 'console' : 'composer'; if (fromCon) S.pending = true; setCircuit(c, true); }
     function doUndo() { if (!S.undo.length) return false; S.redo.push(snap()); S.c = load(S.undo.pop()); S.pend = null; S.dirty = false; evalAll(); render(); afterChange(); return true; }
     function doRedo() { if (!S.redo.length) return false; S.undo.push(snap()); S.c = load(S.redo.pop()); S.pend = null; S.dirty = false; evalAll(); render(); afterChange(); return true; }
     function removeAt(c, q, col) { c.ops = c.ops.filter(function (o) { return !(o.col === col && o.q.indexOf(q) >= 0); }); }
@@ -140,7 +140,7 @@
         body = '<table class="st"><tr class="k"><td>state</td><td>size</td><td>phase</td><td></td><td>chance</td></tr>' + rowsH + '</table><div class="k" style="margin-top:6px">The little arrow shows the phase. A qubit that is shared with others (entangled) has a short arrow below.</div><div class="blochs">' + bl + '</div>';
       }
       $('rbody').innerHTML = body;
-      if ($('rs')) { $('rs').onclick = function () { S.counts = QWL.sample(S.c, S.res, S.shots, S.seed); paintResults(); }; $('sd').onclick = function () { S.seed = S.seed % 99 + 1; S.counts = null; paintResults(); }; }
+      if ($('rs')) { $('rs').onclick = function () { S.counts = QWL.sample(S.c, S.res, S.shots, S.seed); paintResults(); if (cfg.complete === 'shots') complete(); }; $('sd').onclick = function () { S.seed = S.seed % 99 + 1; S.counts = null; paintResults(); }; }
     }
 
     /* ---------- code panel ---------- */
@@ -167,7 +167,7 @@
     function cmsg(m, bad) { var e = $('cmsg'); if (e) e.innerHTML = '<span class="' + (bad ? 'bad' : 'ok') + '">' + esc(m) + '</span>'; }
     function applyCode() {
       var t = S.ctab, src = $('code').value, c;
-      function take(c2, ok) { if (c2.n > cfg.maxQubits) throw new Error('This lab allows up to ' + cfg.maxQubits + ' qubits.'); if (c2.cols > cfg.maxSteps) cfg.maxSteps = c2.cols; setCircuit(c2, true); cmsg(ok || 'Done. The circuit now matches your code.', false); }
+      function take(c2, ok) { S.via = t; if (c2.n > cfg.maxQubits) throw new Error('This lab allows up to ' + cfg.maxQubits + ' qubits.'); if (c2.cols > cfg.maxSteps) cfg.maxSteps = c2.cols; setCircuit(c2, true); cmsg(ok || 'Done. The circuit now matches your code.', false); }
       try {
         if (t === 'text') { c = QWL.fromText(src); take(c); }
         else if (t === 'qasm') { c = QWL.fromQasm(src); take(c); }
@@ -176,7 +176,7 @@
           $('apply').disabled = true; $('apply').textContent = 'Running...';
           QWL.py.run(src).then(function (r) { pyOut = (r.out || '').trim(); var btn = $('apply'); if (btn) { btn.disabled = false; btn.textContent = '▶ Run'; }
             if (r.err) { paintCode(); $('code').value = src; S.dirty = true; cmsg(r.err, true); return; }
-            try { if (!r.qasm) throw new Error('Your code did not make a QuantumCircuit. Try: qc = QuantumCircuit(2)'); var c3 = QWL.fromQasm(r.qasm); if (c3.n > cfg.maxQubits) throw new Error('This lab allows up to ' + cfg.maxQubits + ' qubits.'); var keep = src; if (c3.cols > cfg.maxSteps) cfg.maxSteps = c3.cols; setCircuit(c3, true); $('code').value = keep; S.dirty = true; if ($('pout')) { $('pout').style.display = pyOut ? 'block' : 'none'; $('pout').textContent = pyOut; } cmsg('Ran fine. The circuit above follows your code.', false); }
+            try { if (!r.qasm) throw new Error('Your code did not make a QuantumCircuit. Try: qc = QuantumCircuit(2)'); var c3 = QWL.fromQasm(r.qasm); S.via = 'python'; if (c3.n > cfg.maxQubits) throw new Error('This lab allows up to ' + cfg.maxQubits + ' qubits.'); var keep = src; if (c3.cols > cfg.maxSteps) cfg.maxSteps = c3.cols; setCircuit(c3, true); $('code').value = keep; S.dirty = true; if ($('pout')) { $('pout').style.display = pyOut ? 'block' : 'none'; $('pout').textContent = pyOut; } cmsg('Ran fine. The circuit above follows your code.', false); }
             catch (e) { cmsg(e.message, true); } });
         }
       } catch (e) { cmsg(e.message, true); }
@@ -185,6 +185,7 @@
     /* ---------- levels ---------- */
     function checkLevel() {
       if (!cfg.levels) return; var L = cfg.levels[S.li], r = QWL.check(L.goal, S.c, S.res), st = $('status');
+      if (r.ok && L.goal && L.goal.via && S.via !== L.goal.via) { r = { ok: false, why: ['build it in the ' + ({ python: 'Python', qasm: 'OpenQASM', text: 'Q text' }[L.goal.via] || L.goal.via) + ' tab (open "Code for this circuit")'] }; }
       if (r.ok) { st.innerHTML = '<span class="ok">Solved!</span> ' + esc(L.after || ''); if (!S.solved[S.li]) { S.solved[S.li] = 1; if (Object.keys(S.solved).length >= cfg.levels.length) complete(); }
         $('next').style.display = S.li < cfg.levels.length - 1 ? '' : 'none'; }
       else st.innerHTML = '<span class="k">Not yet.' + (r.why.length ? ' ' + esc(r.why[0]) + '.' : '') + '</span>';
@@ -192,7 +193,7 @@
     function showLevel(i) {
       var L = cfg.levels[i]; S.li = i; $('lt').innerHTML = 'Level ' + (i + 1) + ' of ' + cfg.levels.length + ': ' + esc(L.title); $('li').innerHTML = L.intro || ''; $('sol').innerHTML = ''; $('next').style.display = 'none';
       var c = L.startQasm ? QWL.fromQasm(L.startQasm) : QWL.fromText(L.start || 'I'); if (L.qubits && c.n < L.qubits) { c = QWL.fromText(L.start || 'I'); }
-      S.undo = []; S.redo = []; if (c.cols < cfg.steps) c.cols = cfg.steps; setCircuit(c, false);
+      S.undo = []; S.redo = []; if (c.cols < cfg.steps) c.cols = cfg.steps; S.via = 'composer'; setCircuit(c, false); S.via = 'composer';
     }
     function complete() { if (S.completed) return; S.completed = true; try { if (cfg.onComplete) cfg.onComplete(); else if (root.lilith && root.lilith.complete) root.lilith.complete(); } catch (e) {} }
     function afterChange() { if (cfg.levels) checkLevel(); if (S.pending) { S.pending = false; conPrint(); } if (cfg.complete === 'run' && S.c.ops.length) complete(); }
@@ -249,7 +250,8 @@
     if (cfg.levels) {
       $('next').onclick = function () { if (S.li < cfg.levels.length - 1) showLevel(S.li + 1); }; $('reset').onclick = function () { showLevel(S.li); };
       $('hint').onclick = function () { $('sol').innerHTML = '<div class="card k">Hint: ' + esc(cfg.levels[S.li].hint || 'Try the buttons and watch the chances.') + '</div>'; };
-      $('solbtn').onclick = function () { var L = cfg.levels[S.li]; $('sol').innerHTML = '<div class="card"><div class="k">One solution (Q text):</div><pre>' + esc(L.solution || '') + '</pre><button class="ab s" id="loadsol">Load it</button></div>'; $('loadsol').onclick = function () { setCircuit(QWL.fromText(L.solution), true); }; };
+      $('solbtn').onclick = function () { var L = cfg.levels[S.li], py = L.solutionCode, kind = L.goal && L.goal.via; $('sol').innerHTML = '<div class="card"><div class="k">One solution' + (py ? ' (' + ({ python: 'Python', qasm: 'OpenQASM', text: 'Q text' }[kind] || 'code') + ')' : ' (Q text)') + ':</div><pre>' + esc(py || L.solution || '') + '</pre><button class="ab s" id="loadsol">' + (py ? 'Put it in the editor' : 'Load it') + '</button></div>';
+        $('loadsol').onclick = function () { if (py) { S.ctab = kind; var cb = $('codebox'); if (cb) cb.open = true; paintCode(); var ta = $('code'); if (ta && ta.tagName === 'TEXTAREA') { ta.value = py; S.dirty = true; cmsg('Now press ' + (kind === 'python' ? 'Run' : 'Apply') + '.', false); } } else setCircuit(QWL.fromText(L.solution), true); }; };
     }
 
     /* ---------- start ---------- */

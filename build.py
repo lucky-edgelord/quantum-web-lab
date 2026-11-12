@@ -12,6 +12,14 @@ import argparse, base64, gzip, json, os, struct, sys, zlib, zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
+def mp_dir():
+    """vendor/micropython here, or a sibling vendor/micropython when this folder is vendored into another project."""
+    for d in (os.path.join(HERE, "vendor", "micropython"), os.path.join(HERE, "..", "micropython")):
+        if os.path.exists(os.path.join(d, "micropython.wasm")):
+            return d
+    raise SystemExit("micropython.wasm not found (looked in vendor/micropython)")
+
+
 def read(*p):
     with open(os.path.join(HERE, *p), encoding="utf-8") as f:
         return f.read()
@@ -25,7 +33,7 @@ def gz64(data):
 
 def mp_loader():
     """MicroPython's loader as a classic script (it is turned into a Worker, which cannot import modules from a blob)."""
-    m = read("vendor", "micropython", "micropython.mjs")
+    m = open(os.path.join(mp_dir(), "micropython.mjs"), encoding="utf-8").read()
     m = m.replace("import.meta.url", '"http://localhost/micropython.mjs"').replace("export default _createMicroPythonModule", "").replace("export async function loadMicroPython", "async function loadMicroPython")
     assert "import.meta" not in m and "export async" not in m and "export default" not in m
     return m
@@ -42,7 +50,7 @@ def build_html(config=None, python=True, title="Quantum Web Lab"):
     parts.append('<script id="qwl-config" type="application/json">%s</script>' % js_json(cfg))
     parts.append("<script>" + read("src", "core.js") + "\n" + read("src", "ui.js") + "\n" + read("src", "pyrun.js") + "</script>")
     if python and cfg.get("python", True):
-        wasm = open(os.path.join(HERE, "vendor", "micropython", "micropython.wasm"), "rb").read()
+        wasm = open(os.path.join(mp_dir(), "micropython.wasm"), "rb").read()
         payload = {"mjs": gz64(mp_loader()), "wasm": gz64(wasm), "lib": read("src", "microqiskit.py")}
         parts.append("<script>window.QWL_PY=" + js_json(payload) + ";</script>")
     else:
